@@ -4,8 +4,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-BOT_TOKEN = '8771247025:AAGswMbmxvznrD_ma_ayY0yeEgaeNc3Byfg'
-FLASK_URL = 'http://127.0.0.1:5000/analyze'
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '')
+FLASK_URL = os.environ.get('FLASK_URL', 'http://127.0.0.1:5000/analyze')
 
 # Til sozlamalari
 USER_LANG = {}
