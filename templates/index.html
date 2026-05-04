@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APK Tahlil Tizimi</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a;
+    --border: #2e3250; --accent: #4f6ef7; --accent2: #6c8aff;
+    --text: #e8eaf6; --muted: #7b82a8;
+    --green: #22c55e; --yellow: #f59e0b; --red: #ef4444;
+    --red-soft: #2a1515; --yellow-soft: #1f1a0a; --green-soft: #0a1f14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo h1 { font-size: 17px; font-weight: 600; }
+  .logo p { font-size: 12px; color: var(--muted); }
+  .lang-switcher { display: flex; gap: 6px; }
+  .lang-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px; }
+  .lang-btn:hover { border-color: var(--accent); color: var(--text); }
+  .lang-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  main { max-width: 900px; margin: 36px auto; padding: 0 24px; }
+  .hero { text-align: center; margin-bottom: 36px; }
+  .hero h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .hero h2 span { color: var(--accent2); }
+  .hero p { color: var(--muted); font-size: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 18px; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 44px 24px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,110,247,0.05); }
+  .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { width: 46px; height: 46px; margin: 0 auto 14px; background: var(--surface2); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .drop-zone h3 { font-size: 15px; margin-bottom: 5px; }
+  .drop-zone p { color: var(--muted); font-size: 13px; }
+  .file-selected { background: rgba(79,110,247,0.08); border-color: var(--accent); }
+  .file-name { color: var(--accent2); font-weight: 500; margin-top: 8px; font-size: 13px; }
+  .input-group label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .input-group input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .input-group input:focus { border-color: var(--accent); }
+  .api-help { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .api-help a { color: var(--accent2); }
+  .btn { background: var(--accent); color: white; border: none; border-radius: 10px; padding: 13px 28px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; margin-top: 14px; }
+  .btn:hover { background: var(--accent2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .loading { display: none; text-align: center; padding: 48px; }
+  .spinner { width: 46px; height: 46px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #results { display: none; }
+  .verdict-card { border-radius: 14px; padding: 22px 26px; margin-bottom: 18px; display: flex; align-items: center; gap: 18px; }
+  .verdict-card.malicious { background: var(--red-soft); border: 1px solid var(--red); }
+  .verdict-card.suspicious { background: var(--yellow-soft); border: 1px solid var(--yellow); }
+  .verdict-card.clean,.verdict-card.low { background: var(--green-soft); border: 1px solid var(--green); }
+  .verdict-card.medium { background: var(--yellow-soft); border: 1px solid var(--yellow); }
+  .verdict-card.high { background: var(--red-soft); border: 1px solid var(--red); }
+  .verdict-icon { font-size: 38px; flex-shrink: 0; }
+  .verdict-text h3 { font-size: 18px; font-weight: 700; }
+  .obf-banner { background: rgba(245,158,11,0.08); border: 1px solid var(--yellow); border-radius: 12px; padding: 16px 20px; margin-bottom: 18px; display: flex; gap: 14px; align-items: flex-start; }
+  .obf-icon { font-size: 24px; flex-shrink: 0; }
+  .obf-banner h4 { font-size: 14px; font-weight: 600; color: #fcd34d; margin-bottom: 5px; }
+  .obf-banner p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  @media(max-width:580px){.grid-2{grid-template-columns:1fr;}}
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-value { font-size: 24px; font-weight: 700; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .risk-bar { height: 7px; background: var(--surface2); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .risk-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+  .risk-fill.low { background: var(--green); }
+  .risk-fill.medium { background: var(--yellow); }
+  .risk-fill.high { background: var(--red); }
+  .perm-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .perm-tag { font-size: 11px; padding: 4px 9px; border-radius: 6px; border: 1px solid; }
+  .perm-tag.dangerous { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+  .perm-tag.normal { background: var(--surface2); border-color: var(--border); color: var(--muted); }
+  .section-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .badge-red { background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .badge-yellow { background: rgba(245,158,11,0.2); color: #fcd34d; }
+  .badge-green { background: rgba(34,197,94,0.2); color: #86efac; }
+  .rf-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .rf-item:last-child { border-bottom: none; }
+  .rf-item .icon { color: var(--red); flex-shrink: 0; }
+  .rf-item .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .info-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .lbl { color: var(--muted); }
+  .info-row .val { font-weight: 500; font-family: monospace; font-size: 11px; word-break: break-all; text-align: right; max-width: 65%; }
+  .vt-link { display: inline-flex; align-items: center; gap: 6px; color: var(--accent2); font-size: 13px; text-decoration: none; margin-top: 12px; padding: 8px 14px; background: rgba(79,110,247,0.1); border-radius: 8px; border: 1px solid rgba(79,110,247,0.2); }
+  .vt-link:hover { background: rgba(79,110,247,0.2); }
+  .engine-tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+  .engines-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .error-box { background: var(--red-soft); border: 1px solid var(--red); border-radius: 10px; padding: 14px 18px; color: #fca5a5; font-size: 13px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div><h1 id="hTitle">APK Tahlil Tizimi</h1><p id="hSub">Xavfsizlik Tahlilchisi</p></div>
+  </div>
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('uz')">UZ</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('ru')">RU</button>
+  </div>
+</header>
+<main>
+  <div class="hero">
+    <h2><span id="heroSpan" style="color:var(--accent2)">Xavfsizlik</span> <span id="heroTitle">Tahlili</span></h2>
+    <p id="heroDesc">Android ilovalarni zararli dasturlar va xavfli ruxsatlar uchun tekshiring</p>
+  </div>
+  <div class="card">
+    <div class="card-title" id="uploadTitle">Fayl yuklash</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".apk">
+      <div class="drop-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <h3 id="dropTitle">APK faylni shu yerga tashlang</h3>
+      <p id="dropSub">yoki bosing va tanlang</p>
+      <div class="file-name" id="fileName" style="display:none"></div>
+    </div>
+  </div>
+  <div class="card">
+    <button class="btn" id="analyzeBtn" onclick="startAnalysis()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <span id="btnText">Tahlil boshlash</span>
+    </button>
+  </div>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p id="loadTxt">APK tahlil qilinmoqda...</p>
+    <p style="font-size:12px;margin-top:6px;color:#4a5178" id="loadTxt2">VirusTotal tekshiruvi 30-60 soniya olishi mumkin</p>
+  </div>
+  <div id="results"></div>
+</main>
+<script>
+const T = {
+  uz:{title:'APK Tahlil Tizimi',sub:'Xavfsizlik Tahlilchisi',span:'Xavfsizlik',htitle:'Tahlili',desc:'Android ilovalarni zararli dasturlar va xavfli ruxsatlar uchun tekshiring',utitle:'Fayl yuklash',dtitle:'APK faylni shu yerga tashlang',dsub:'yoki bosing va tanlang',albl:'API Kalit',aph:'VirusTotal API kalitingizni kiriting...',ahelp:'Bepul API kalit: <a href="https://www.virustotal.com/gui/join-us" target="_blank">virustotal.com</a>',btn:'Tahlil boshlash',l1:'APK tahlil qilinmoqda...',l2:'VirusTotal tekshiruvi 30-60 soniya olishi mumkin',vmal:'XAVFLI — Zararli dastur aniqlandi!',vsus:"SHUBHALI — Ehtiyot bo'ling!",vclean:'XAVFSIZ — Muammo aniqlanmadi',obtitle:'APK Kuchli Himoyalangan (Obfuscated)',obdesc:"Ushbu APK maxsus himoya usullari bilan qoplangan. Manifest va ruxsatlar o'qilmadi. Bu ko'pincha zararli dasturlarda uchraydigan belgi. VirusTotal natijasiga alohida e'tibor bering.",ainfo:"Ilova ma'lumotlari",pkg:'Paket nomi',aname:'Ilova nomi',ver:'Versiya',sdk:'Min Android SDK',fsz:'Fayl hajmi',rscore:'Xavf darajasi',comp:'Komponentlar',perms:'Ruxsatlar',dang:'xavfli',norm:'oddiy',rfact:'Xavf omillari',vtlbl:'VirusTotal',mlbl:'Zararli',clbl:'Toza',eflag:'antivirus aniqladi',esafe:'antivirus xavfsiz dedi',detby:'Aniqlaganlar',vtfull:"VirusTotal'da to'liq hisobot",lrisk:'Past xavf',mrisk:"O'rta xavf",hrisk:'Yuqori xavf',more:"ko'proq..."},
+  en:{title:'APK Analyzer',sub:'Security Analyzer',span:'Security',htitle:'Analysis',desc:'Analyze Android apps for malware and dangerous permissions',utitle:'Upload File',dtitle:'Drag & Drop APK here',dsub:'or click to browse',albl:'API Key',aph:'Enter your VirusTotal API key...',ahelp:'Free API key at <a href="https://www.virustotal.com/gui/join-us" target="_blank">virustotal.com</a>',btn:'Start Analysis',l1:'Analyzing APK...',l2:'VirusTotal scan may take 30-60 seconds',vmal:'DANGEROUS — Malware detected!',vsus:'SUSPICIOUS — Exercise caution!',vclean:'SAFE — No threats detected',obtitle:'APK is Heavily Obfuscated',obdesc:'This APK is protected with advanced obfuscation. Manifest and permissions could not be read. This is a common indicator of malicious software. Pay close attention to the VirusTotal result.',ainfo:'App Information',pkg:'Package',aname:'App Name',ver:'Version',sdk:'Min Android SDK',fsz:'File Size',rscore:'Risk Score',comp:'Components',perms:'Permissions',dang:'dangerous',norm:'normal',rfact:'Risk Factors',vtlbl:'VirusTotal',mlbl:'Malicious',clbl:'Clean',eflag:'engines flagged',esafe:'engines say safe',detby:'Detected by',vtfull:'View full report on VirusTotal',lrisk:'Low risk',mrisk:'Medium risk',hrisk:'High risk',more:'more...'},
+  ru:{title:'APK Анализатор',sub:'Анализатор безопасности',span:'Безопасность',htitle:'APK файлов',desc:'Анализ Android-приложений на вредоносные программы и опасные разрешения',utitle:'Загрузка файла',dtitle:'Перетащите APK сюда',dsub:'или нажмите для выбора',albl:'API Ключ',aph:'Введите ваш VirusTotal API ключ...',ahelp:'Бесплатный ключ на <a href="https://www.virustotal.com/gui/join-us" target="_blank">virustotal.com</a>',btn:'Начать анализ',l1:'Анализ APK...',l2:'Проверка VirusTotal может занять 30-60 секунд',vmal:'ОПАСНО — Обнаружена вредоносная программа!',vsus:'ПОДОЗРИТЕЛЬНО — Будьте осторожны!',vclean:'БЕЗОПАСНО — Угроз не обнаружено',obtitle:'APK сильно защищён (Obfuscated)',obdesc:'Этот APK защищён продвинутыми методами обфускации. Манифест и разрешения не читаются. Это частый признак вредоносного ПО. Обратите особое внимание на результат VirusTotal.',ainfo:'Информация о приложении',pkg:'Пакет',aname:'Название',ver:'Версия',sdk:'Мин. Android SDK',fsz:'Размер файла',rscore:'Уровень риска',comp:'Компоненты',perms:'Разрешения',dang:'опасных',norm:'обычных',rfact:'Факторы риска',vtlbl:'VirusTotal',mlbl:'Вредоносных',clbl:'Безопасных',eflag:'антивирусов обнаружили',esafe:'антивирусов — безопасно',detby:'Обнаружили',vtfull:'Полный отчёт на VirusTotal',lrisk:'Низкий риск',mrisk:'Средний риск',hrisk:'Высокий риск',more:'ещё...'}
+};
+
+let lang = 'uz';
+function t(k){ return T[lang][k] || k; }
+
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('hTitle').textContent = t('title');
+  document.getElementById('hSub').textContent = t('sub');
+  document.getElementById('heroSpan').textContent = t('span');
+  document.getElementById('heroTitle').textContent = t('htitle');
+  document.getElementById('heroDesc').textContent = t('desc');
+  document.getElementById('uploadTitle').textContent = t('utitle');
+  document.getElementById('dropTitle').textContent = t('dtitle');
+  document.getElementById('dropSub').textContent = t('dsub');
+  document.getElementById('btnText').textContent = t('btn');
+  document.getElementById('loadTxt').textContent = t('l1');
+  document.getElementById('loadTxt2').textContent = t('l2');
+  if(window._lastData) renderResults(window._lastData);
+}
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+let selectedFile = null;
+fileInput.addEventListener('change', e => setFile(e.target.files[0]));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); setFile(e.dataTransfer.files[0]); });
+
+function setFile(f){
+  if(!f || !f.name.toLowerCase().endsWith('.apk')){ alert('Faqat .apk / Only .apk / Только .apk'); return; }
+  selectedFile = f;
+  const fn = document.getElementById('fileName');
+  fn.textContent = f.name + ' (' + (f.size/1024/1024).toFixed(2) + ' MB)';
+  fn.style.display = 'block';
+  dropZone.classList.add('file-selected');
+}
+
+function fmtBytes(b){ return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(2)+' MB'; }
+
+async function startAnalysis(){
+  if(!selectedFile){ alert(t('dtitle')); return; }
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = true;
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  fd.append('api_key', '');
+  try{
+    const res = await fetch('/analyze',{method:'POST',body:fd});
+    const data = await res.json();
+    window._lastData = data;
+    renderResults(data);
+  }catch(e){
+    document.getElementById('results').innerHTML = '<div class="error-box">'+e.message+'</div>';
+    document.getElementById('results').style.display = 'block';
+  }finally{
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+}
+
+function renderResults(data){
+  const r = document.getElementById('results');
+  r.style.display = 'block';
+  if(data.error){ r.innerHTML = '<div class="error-box">'+data.error+'</div>'; return; }
+  const local = data.local || {};
+  const vt = data.virustotal || {};
+  const risk = local.risk_level || 'low';
+  const vtV = vt.verdict || 'unknown';
+  const obf = local.obfuscated || false;
+  const bad = vtV==='malicious' || risk==='high';
+  const med = vtV==='suspicious' || risk==='medium';
+  const vc = bad?'malicious':med?'suspicious':'clean';
+  const vi = bad?'🚨':med?'⚠️':'✅';
+  const vt2 = bad?t('vmal'):med?t('vsus'):t('vclean');
+  let html = '';
+
+  html += `<div class="verdict-card ${vc}"><div class="verdict-icon">${vi}</div><div class="verdict-text"><h3>${vt2}</h3></div></div>`;
+
+  if(obf){
+    html += `<div class="obf-banner"><div class="obf-icon">🔒</div><div><h4>${t('obtitle')}</h4><p>${t('obdesc')}</p></div></div>`;
+  }
+
+  html += `<div class="card"><div class="card-title">${t('ainfo')}</div>
+    <div class="info-row"><span class="lbl">${t('pkg')}</span><span class="val">${local.package_name||'-'}</span></div>
+    <div class="info-row"><span class="lbl">${t('aname')}</span><span class="val">${local.app_name||'-'}</span></div>
+    <div class="info-row"><span class="lbl">${t('ver')}</span><span class="val">${local.version_name||'-'} (code: ${local.version_code||'-'})</span></div>
+    <div class="info-row"><span class="lbl">${t('sdk')}</span><span class="val">${local.min_sdk||'-'} / Target: ${local.target_sdk||'-'}</span></div>
+    <div class="info-row"><span class="lbl">${t('fsz')}</span><span class="val">${fmtBytes(data.filesize)}</span></div>
+    <div class="info-row"><span class="lbl">SHA-256</span><span class="val">${data.sha256}</span></div>
+  </div>`;
+
+  const rs = local.risk_score||0; const rl = local.risk_level||'low';
+  html += `<div class="grid-2">
+    <div class="stat-card">
+      <div class="stat-label">${t('rscore')}</div>
+      <div class="stat-value" style="color:${rl==='high'?'var(--red)':rl==='medium'?'var(--yellow)':'var(--green)'}">${rs}/100</div>
+      <div class="risk-bar"><div class="risk-fill ${rl}" style="width:${rs}%"></div></div>
+      <div class="stat-sub">${rl==='high'?t('hrisk'):rl==='medium'?t('mrisk'):t('lrisk')}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">${t('comp')}</div>
+      <div class="stat-value">${(local.activities_count||0)+(local.services_count||0)+(local.receivers_count||0)}</div>
+      <div class="stat-sub">${local.activities_count||0} Activity · ${local.services_count||0} Service · ${local.receivers_count||0} Receiver</div>
+    </div>
+  </div>`;
+
+  const ap = local.permissions||[]; const dp = local.dangerous_permissions||[];
+  if(ap.length>0){
+    html += `<div class="card"><div class="section-title">${t('perms')} <span class="badge ${dp.length>3?'badge-red':dp.length>0?'badge-yellow':'badge-green'}">${ap.length} total</span></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">${dp.length} ${t('dang')} · ${ap.length-dp.length} ${t('norm')}</p>
+      <div class="perm-list">`;
+    dp.forEach(p=>{ html+=`<span class="perm-tag dangerous">${p.replace('android.permission.','')}</span>`; });
+    ap.filter(p=>!dp.includes(p)).slice(0,15).forEach(p=>{ html+=`<span class="perm-tag normal">${p.replace('android.permission.','')}</span>`; });
+    if(ap.length>15+dp.length) html+=`<span class="perm-tag normal">+${ap.length-15-dp.length} ${t('more')}</span>`;
+    html+=`</div></div>`;
+  }
+
+  const rf = local.risk_factors||[];
+  if(rf.length>0){
+    html+=`<div class="card"><div class="section-title">${t('rfact')}</div>`;
+    rf.forEach(f=>{
+      const main = f[lang]||f['uz']||'';
+      const sub = lang==='uz'?f['en']:lang==='en'?f['ru']:f['en'];
+      html+=`<div class="rf-item"><span class="icon">⚠</span><div><div>${main}</div><div class="sub">${sub||''}</div></div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(vt.error){
+    html+=`<div class="card"><div class="card-title">${t('vtlbl')}</div><div class="error-box">${vt.error}</div></div>`;
+  } else if(vt.stats){
+    const mal=vt.malicious_count||0; const cl=vt.stats.undetected||0;
+    html+=`<div class="card">
+      <div class="card-title">${t('vtlbl')} — ${vt.total_engines} engines</div>
+      <div class="grid-2">
+        <div class="stat-card"><div class="stat-label">${t('mlbl')}</div><div class="stat-value" style="color:${mal>0?'var(--red)':'var(--green)'}">${mal}</div><div class="stat-sub">${t('eflag')}</div></div>
+        <div class="stat-card"><div class="stat-label">${t('clbl')}</div><div class="stat-value" style="color:var(--green)">${cl}</div><div class="stat-sub">${t('esafe')}</div></div>
+      </div>`;
+    if((vt.malicious_engines||[]).length>0){
+      html+=`<div class="section-title" style="margin-top:14px">${t('detby')} <span class="badge badge-red">${vt.malicious_engines.length}</span></div><div class="engines-list">`;
+      vt.malicious_engines.forEach(e=>{html+=`<span class="engine-tag">${e}</span>`;});
+      html+=`</div>`;
+    }
+    if(vt.vt_link) html+=`<a href="${vt.vt_link}" target="_blank" class="vt-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('vtfull')}</a>`;
+    html+=`</div>`;
+  }
+  r.innerHTML = html;
+}
+</script>
+</body>
+</html>
